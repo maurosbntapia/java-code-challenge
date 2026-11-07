@@ -62,4 +62,16 @@ public class InMemoryTransactionRepository implements TransactionRepository {
             lock.readLock().unlock();
         }
     }
+
+    /** Removes all stored state. Intended for test isolation. */
+    public void clear() {
+        lock.writeLock().lock();
+        try {
+            byId.clear();
+            idsByType.clear();
+            childrenByParent.clear();
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
 }

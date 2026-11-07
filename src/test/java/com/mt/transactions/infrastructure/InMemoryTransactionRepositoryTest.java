@@ -84,4 +84,16 @@ class InMemoryTransactionRepositoryTest {
         assertThatThrownBy(() -> repo.save(tx(1L, "5000", 1L)))
                 .isInstanceOf(ParentNotFoundException.class);
     }
+
+    @Test
+    void clearRemovesEverything() {
+        repo.save(tx(10L, "5000", null));
+        repo.save(tx(11L, "5000", 10L));
+
+        repo.clear();
+
+        assertThat(repo.findById(10L)).isEmpty();
+        assertThat(repo.findById(11L)).isEmpty();
+        assertThat(repo.save(tx(10L, "1", null))).isEqualTo(SaveResult.CREATED);
+    }
 }
