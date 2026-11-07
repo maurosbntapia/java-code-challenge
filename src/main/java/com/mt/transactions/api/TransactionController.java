@@ -5,6 +5,7 @@ import com.mt.transactions.api.dto.StatusResponse;
 import com.mt.transactions.api.dto.SumResponse;
 import com.mt.transactions.application.TransactionService;
 import com.mt.transactions.domain.SaveResult;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,7 +32,7 @@ public class TransactionController {
     @PutMapping("/{transactionId}")
     public ResponseEntity<StatusResponse> putTransaction(
             @PathVariable long transactionId,
-            @RequestBody CreateTransactionRequest request) {
+            @Valid @RequestBody CreateTransactionRequest request) {
 
         SaveResult result = service.createTransaction(
                 transactionId, BigDecimal.valueOf(request.amount()), request.type(), request.parentId());
