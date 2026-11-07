@@ -1,0 +1,7 @@
+services:
+  transactions:
+    build: .
+    image: transactions:latest
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
