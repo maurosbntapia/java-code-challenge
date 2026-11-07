@@ -55,7 +55,7 @@ Ids de las transacciones del tipo, en orden de creación (`[]` si no hay). El ti
 
 ### `GET /transactions/sum/{transaction_id}`
 
-Monto de la transacción más el de **todos sus descendientes** → `{"sum": 20000.0}`. `404` si no existe.
+Monto de la transacción más el de **todos sus descendientes** → `{"sum": 20000}`. `404` si no existe.
 
 ### Errores
 
@@ -79,8 +79,8 @@ curl -X PUT localhost:8080/transactions/11 -H 'Content-Type: application/json' -
 curl -X PUT localhost:8080/transactions/12 -H 'Content-Type: application/json' -d '{"amount":5000,"type":"shopping","parent_id":11}'
 
 curl localhost:8080/transactions/types/cars   # [10]
-curl localhost:8080/transactions/sum/10       # {"sum":20000.0}
-curl localhost:8080/transactions/sum/11       # {"sum":15000.0}
+curl localhost:8080/transactions/sum/10       # {"sum":20000}
+curl localhost:8080/transactions/sum/11       # {"sum":15000}
 ```
 
 ## Decisiones principales

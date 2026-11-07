@@ -68,7 +68,7 @@ Devuelve la suma del monto de la transacción más el de **todos sus descendient
  
 | Caso | Status | Body |
 |---|---|---|
-| Transacción existente | `200 OK` | `{"sum": 20000.0}` |
+| Transacción existente | `200 OK` | `{"sum": 20000}` |
 | Transacción inexistente | `404 Not Found` | Problem Detail |
  
 ### 3.4 Formato de errores
@@ -93,8 +93,8 @@ PUT /transactions/11 { "amount": 10000, "type": "shopping", "parent_id": 10 } �
 PUT /transactions/12 { "amount": 5000,  "type": "shopping", "parent_id": 11 } → 201 {"status":"ok"}
  
 GET /transactions/types/cars → [10]
-GET /transactions/sum/10     → {"sum": 20000.0}
-GET /transactions/sum/11     → {"sum": 15000.0}
+GET /transactions/sum/10     → {"sum": 20000}
+GET /transactions/sum/11     → {"sum": 15000}
 ```
  
 ## 4. Decisiones
@@ -150,6 +150,8 @@ Se usa `Locale.ROOT` para que el resultado no dependa del locale del servidor (p
 El contrato expone `double`, pero los montos se guardan y suman como `BigDecimal` para evitar errores de punto flotante (`0.1 + 0.2 ≠ 0.3`).
  
 La comparación de montos en el reintento idempotente usa `compareTo`, no `equals`, porque `equals` tiene en cuenta la escala (`5000` ≠ `5000.0`).
+
+La respuesta de `sum` también es `BigDecimal`, sin ceros a la derecha y en notación plana: `20000` (igual que el ejemplo del enunciado), `0.3` y `10000000`. Devolver `double` daría `20000.0` y, para montos grandes, notación científica (`1.0E7`).
  
 ### D7 — Nombres en snake_case
  
@@ -244,7 +246,7 @@ Los tests de integración envían **JSON crudo idéntico al del contrato**, no D
  
 | Caso | Esperado |
 |---|---|
-| Ejemplo de aceptación (§3.5) | `[10]`, `20000.0`, `15000.0` |
+| Ejemplo de aceptación (§3.5) | `[10]`, `{"sum":20000}`, `{"sum":15000}` (body literal) |
 | `parent_id` en snake_case vincula al padre | sum del padre incluye al hijo |
 | `0.1 + 0.2` | `0.3` |
 | Reintento idéntico | `200`, sin duplicar en `/types` |
@@ -296,7 +298,7 @@ Cada paso es un par *test rojo → implementación*, con [Conventional Commits](
 - Una sola instancia del servicio: el estado no se comparte entre réplicas.
 - Se acepta cualquier valor `long` como id; el enunciado no lo restringe.
 - Los campos desconocidos del body se ignoran.
-- La suma se devuelve como número JSON con decimales (`20000.0`), numéricamente equivalente al ejemplo (`20000`).
+- La suma se devuelve como número JSON exacto y sin ceros a la derecha (`20000`, `0.3`), idéntico al ejemplo del enunciado.
 ## 12. Extensiones futuras
  
 - **Reversas y ajustes.** Hoy `amount > 0`. Si el negocio necesitara restas, no se usarían montos negativos ni un endpoint de "resta". Se modelarían como en un ledger de partida doble, con una dirección explícita (`DEBIT` / `CREDIT`) y monto siempre positivo, o como transacciones de reversa vinculadas a la original vía `parent_id`. `sum` pasaría a calcular el neto según la dirección.

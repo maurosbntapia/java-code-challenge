@@ -50,6 +50,6 @@ public class TransactionController {
     /** Amount of the transaction plus all its descendants. */
     @GetMapping("/sum/{transactionId}")
     public SumResponse getSum(@PathVariable long transactionId) {
-        return new SumResponse(service.getSum(transactionId).doubleValue());
+        return SumResponse.of(service.getSum(transactionId));
     }
 }

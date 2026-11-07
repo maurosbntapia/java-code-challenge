@@ -15,7 +15,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -163,10 +162,10 @@ class TransactionControllerIntegrationTest {
                 .andExpect(content().json("[10]", true));
         mockMvc.perform(get("/transactions/sum/10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.sum").value(20000.0));
+                .andExpect(content().string("{\"sum\":20000}"));
         mockMvc.perform(get("/transactions/sum/11"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.sum").value(15000.0));
+                .andExpect(content().string("{\"sum\":15000}"));
     }
 
     @Test
@@ -176,8 +175,7 @@ class TransactionControllerIntegrationTest {
 
         mockMvc.perform(get("/transactions/sum/10"))
                 .andExpect(status().isOk())
-                .andExpect(content().json("""
-                        {"sum": 5000.0}""", true));
+                .andExpect(content().string("{\"sum\":5000}"));
     }
 
     @Test
@@ -189,6 +187,28 @@ class TransactionControllerIntegrationTest {
 
         mockMvc.perform(get("/transactions/sum/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.sum").value(0.3));
+                .andExpect(content().string("{\"sum\":0.3}"));
+    }
+
+    @Test
+    void sumKeepsSignificantDecimalsAndIsNeverInScientificNotation() throws Exception {
+        putTransaction(1, """
+                { "amount": 1000000, "type": "t" }""").andExpect(status().isCreated());
+        putTransaction(2, """
+                { "amount": 0.25, "type": "t", "parent_id": 1 }""").andExpect(status().isCreated());
+
+        mockMvc.perform(get("/transactions/sum/1"))
+                .andExpect(content().string("{\"sum\":1000000.25}"));
+        mockMvc.perform(get("/transactions/sum/2"))
+                .andExpect(content().string("{\"sum\":0.25}"));
+    }
+
+    @Test
+    void roundNumberSumIsNotInScientificNotation() throws Exception {
+        putTransaction(1, """
+                { "amount": 1e7, "type": "t" }""").andExpect(status().isCreated());
+
+        mockMvc.perform(get("/transactions/sum/1"))
+                .andExpect(content().string("{\"sum\":10000000}"));
     }
 }
