@@ -12,6 +12,15 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -136,5 +145,33 @@ class TransactionErrorHandlingIntegrationTest {
 
         expectProblem(result, 404, "/transactions/sum/999");
         result.andExpect(jsonPath("$.detail").value("Transaction 999 not found"));
+    }
+
+    @Test
+    void concurrentPutsWithSameIdAndDifferentContentCreateOnlyOne() throws Exception {
+        int threads = 16;
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        try {
+            CountDownLatch startGate = new CountDownLatch(1);
+            List<Future<Integer>> statuses = new ArrayList<>();
+            for (int i = 0; i < threads; i++) {
+                String body = "{ \"amount\": " + (1000 + i) + ", \"type\": \"cars\" }";
+                statuses.add(executor.submit(() -> {
+                    startGate.await();
+                    return putTransaction("10", body).andReturn().getResponse().getStatus();
+                }));
+            }
+            startGate.countDown();
+
+            List<Integer> results = new ArrayList<>();
+            for (Future<Integer> status : statuses) {
+                results.add(status.get(10, TimeUnit.SECONDS));
+            }
+
+            assertThat(results).filteredOn(s -> s == 201).hasSize(1);
+            assertThat(results).filteredOn(s -> s == 409).hasSize(threads - 1);
+        } finally {
+            executor.shutdownNow();
+        }
     }
 }
