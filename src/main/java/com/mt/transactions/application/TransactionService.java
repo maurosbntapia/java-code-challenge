@@ -7,6 +7,7 @@ import com.mt.transactions.domain.TransactionType;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * Transaction use cases. Orchestrates the domain and the repository port;
@@ -23,5 +24,9 @@ public class TransactionService {
 
     public SaveResult createTransaction(long id, BigDecimal amount, String type, Long parentId) {
         return repository.save(new Transaction(id, amount, new TransactionType(type), parentId));
+    }
+
+    public List<Long> getIdsByType(String type) {
+        return repository.findIdsByType(new TransactionType(type));
     }
 }

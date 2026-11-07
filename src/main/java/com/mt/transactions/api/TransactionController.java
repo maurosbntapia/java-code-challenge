@@ -6,6 +6,7 @@ import com.mt.transactions.application.TransactionService;
 import com.mt.transactions.domain.SaveResult;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @RestController
 @RequestMapping("/transactions")
@@ -35,5 +37,11 @@ public class TransactionController {
 
         HttpStatus status = result == SaveResult.CREATED ? HttpStatus.CREATED : HttpStatus.OK;
         return ResponseEntity.status(status).body(StatusResponse.ok());
+    }
+
+    /** Ids of all transactions of the given type, in creation order. The type is normalized. */
+    @GetMapping("/types/{type}")
+    public List<Long> getIdsByType(@PathVariable String type) {
+        return service.getIdsByType(type);
     }
 }

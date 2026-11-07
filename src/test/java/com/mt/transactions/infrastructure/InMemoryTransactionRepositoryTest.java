@@ -96,4 +96,28 @@ class InMemoryTransactionRepositoryTest {
         assertThat(repo.findById(11L)).isEmpty();
         assertThat(repo.save(tx(10L, "1", null))).isEqualTo(SaveResult.CREATED);
     }
+
+    @Test
+    void findIdsByTypeReturnsIdsInInsertionOrder() {
+        repo.save(tx(11L, "100", null));
+        repo.save(tx(10L, "200", null));
+        repo.save(new Transaction(12L, BigDecimal.ONE, new TransactionType("shopping"), null));
+
+        assertThat(repo.findIdsByType(CARS)).containsExactly(11L, 10L);
+    }
+
+    @Test
+    void findIdsByTypeReturnsEmptyForUnknownType() {
+        assertThat(repo.findIdsByType(new TransactionType("unknown"))).isEmpty();
+    }
+
+    @Test
+    void findIdsByTypeReturnsSnapshotNotLiveView() {
+        repo.save(tx(10L, "100", null));
+        var ids = repo.findIdsByType(CARS);
+
+        repo.save(tx(11L, "100", null));
+
+        assertThat(ids).containsExactly(10L);
+    }
 }

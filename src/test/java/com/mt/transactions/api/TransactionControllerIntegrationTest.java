@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -96,5 +97,49 @@ class TransactionControllerIntegrationTest {
         putTransaction(10, """
                 { "amount": 5000, "type": "cars", "currency": "ARS" }""")
                 .andExpect(status().isCreated());
+    }
+
+    @Test
+    void listsIdsOfTypeInCreationOrder() throws Exception {
+        putTransaction(10, """
+                { "amount": 5000, "type": "cars" }""").andExpect(status().isCreated());
+        putTransaction(11, """
+                { "amount": 10000, "type": "shopping", "parent_id": 10 }""").andExpect(status().isCreated());
+        putTransaction(12, """
+                { "amount": 3000, "type": "cars" }""").andExpect(status().isCreated());
+
+        mockMvc.perform(get("/transactions/types/cars"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[10, 12]", true));
+    }
+
+    @Test
+    void typeIsNormalizedWhenQueried() throws Exception {
+        putTransaction(10, """
+                { "amount": 5000, "type": "cars" }""").andExpect(status().isCreated());
+        putTransaction(11, """
+                { "amount": 5000, "type": "CARS" }""").andExpect(status().isCreated());
+
+        mockMvc.perform(get("/transactions/types/CARS"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[10, 11]", true));
+    }
+
+    @Test
+    void typeWithoutTransactionsReturnsEmptyList() throws Exception {
+        mockMvc.perform(get("/transactions/types/unknown"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[]", true));
+    }
+
+    @Test
+    void identicalRetryDoesNotDuplicateIdInType() throws Exception {
+        String body = """
+                { "amount": 5000, "type": "cars" }""";
+        putTransaction(10, body).andExpect(status().isCreated());
+        putTransaction(10, body).andExpect(status().isOk());
+
+        mockMvc.perform(get("/transactions/types/cars"))
+                .andExpect(content().json("[10]", true));
     }
 }

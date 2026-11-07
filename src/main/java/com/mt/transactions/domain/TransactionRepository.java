@@ -3,6 +3,7 @@ package com.mt.transactions.domain;
 import com.mt.transactions.domain.exception.ParentNotFoundException;
 import com.mt.transactions.domain.exception.TransactionConflictException;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -22,4 +23,7 @@ public interface TransactionRepository {
     SaveResult save(Transaction transaction);
 
     Optional<Transaction> findById(long id);
+
+    /** Ids of all transactions of the given type, in creation order. Empty if none. */
+    List<Long> findIdsByType(TransactionType type);
 }

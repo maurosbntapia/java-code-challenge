@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -58,6 +59,16 @@ public class InMemoryTransactionRepository implements TransactionRepository {
         lock.readLock().lock();
         try {
             return Optional.ofNullable(byId.get(id));
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    @Override
+    public List<Long> findIdsByType(TransactionType type) {
+        lock.readLock().lock();
+        try {
+            return List.copyOf(idsByType.getOrDefault(type, Set.of()));
         } finally {
             lock.readLock().unlock();
         }
