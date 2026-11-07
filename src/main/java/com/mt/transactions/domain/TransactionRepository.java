@@ -2,7 +2,9 @@ package com.mt.transactions.domain;
 
 import com.mt.transactions.domain.exception.ParentNotFoundException;
 import com.mt.transactions.domain.exception.TransactionConflictException;
+import com.mt.transactions.domain.exception.TransactionNotFoundException;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,4 +28,11 @@ public interface TransactionRepository {
 
     /** Ids of all transactions of the given type, in creation order. Empty if none. */
     List<Long> findIdsByType(TransactionType type);
+
+    /**
+     * Amount of the transaction plus the amounts of all its descendants (children, grandchildren, ...).
+     *
+     * @throws TransactionNotFoundException if the transaction does not exist
+     */
+    BigDecimal sumWithDescendants(long id);
 }

@@ -6,9 +6,14 @@ import com.mt.transactions.domain.TransactionRepository;
 import com.mt.transactions.domain.TransactionType;
 import com.mt.transactions.domain.exception.ParentNotFoundException;
 import com.mt.transactions.domain.exception.TransactionConflictException;
+import com.mt.transactions.domain.exception.TransactionNotFoundException;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +74,35 @@ public class InMemoryTransactionRepository implements TransactionRepository {
         lock.readLock().lock();
         try {
             return List.copyOf(idsByType.getOrDefault(type, Set.of()));
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /**
+     * Iterative DFS over {@code childrenByParent}, so very deep chains cannot overflow the stack.
+     * The graph is acyclic by construction; the visited set is defense in depth.
+     */
+    @Override
+    public BigDecimal sumWithDescendants(long id) {
+        lock.readLock().lock();
+        try {
+            if (!byId.containsKey(id)) {
+                throw new TransactionNotFoundException(id);
+            }
+            BigDecimal sum = BigDecimal.ZERO;
+            Set<Long> visited = new HashSet<>();
+            Deque<Long> pending = new ArrayDeque<>();
+            pending.push(id);
+            while (!pending.isEmpty()) {
+                long current = pending.pop();
+                if (!visited.add(current)) {
+                    continue;
+                }
+                sum = sum.add(byId.get(current).amount());
+                childrenByParent.getOrDefault(current, Set.of()).forEach(pending::push);
+            }
+            return sum;
         } finally {
             lock.readLock().unlock();
         }

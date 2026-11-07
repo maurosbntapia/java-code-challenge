@@ -5,6 +5,7 @@ import com.mt.transactions.domain.Transaction;
 import com.mt.transactions.domain.TransactionType;
 import com.mt.transactions.domain.exception.ParentNotFoundException;
 import com.mt.transactions.domain.exception.TransactionConflictException;
+import com.mt.transactions.domain.exception.TransactionNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -119,5 +120,42 @@ class InMemoryTransactionRepositoryTest {
         repo.save(tx(11L, "100", null));
 
         assertThat(ids).containsExactly(10L);
+    }
+
+    @Test
+    void sumIncludesSelfAndAllDescendants() {
+        repo.save(tx(10L, "5000", null));
+        repo.save(tx(11L, "10000", 10L));
+        repo.save(tx(12L, "5000", 11L));
+
+        assertThat(repo.sumWithDescendants(10L)).isEqualByComparingTo("20000");
+        assertThat(repo.sumWithDescendants(11L)).isEqualByComparingTo("15000");
+        assertThat(repo.sumWithDescendants(12L)).isEqualByComparingTo("5000");
+    }
+
+    @Test
+    void sumCoversEveryBranchButNotAncestorsOrSiblings() {
+        repo.save(tx(1L, "1", null));
+        repo.save(tx(2L, "10", 1L));
+        repo.save(tx(3L, "100", 1L));
+        repo.save(tx(4L, "1000", 2L));
+        repo.save(tx(5L, "10000", 3L));
+
+        assertThat(repo.sumWithDescendants(1L)).isEqualByComparingTo("11111");
+        assertThat(repo.sumWithDescendants(2L)).isEqualByComparingTo("1010");
+    }
+
+    @Test
+    void sumIsExactWithDecimalAmounts() {
+        repo.save(tx(1L, "0.1", null));
+        repo.save(tx(2L, "0.2", 1L));
+
+        assertThat(repo.sumWithDescendants(1L)).isEqualByComparingTo("0.3");
+    }
+
+    @Test
+    void sumOfUnknownIdThrowsNotFound() {
+        assertThatThrownBy(() -> repo.sumWithDescendants(999L))
+                .isInstanceOf(TransactionNotFoundException.class);
     }
 }

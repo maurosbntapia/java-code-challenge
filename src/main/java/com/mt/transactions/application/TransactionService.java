@@ -29,4 +29,8 @@ public class TransactionService {
     public List<Long> getIdsByType(String type) {
         return repository.findIdsByType(new TransactionType(type));
     }
+
+    public BigDecimal getSum(long id) {
+        return repository.sumWithDescendants(id);
+    }
 }

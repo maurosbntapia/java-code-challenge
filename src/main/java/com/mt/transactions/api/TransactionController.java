@@ -2,6 +2,7 @@ package com.mt.transactions.api;
 
 import com.mt.transactions.api.dto.CreateTransactionRequest;
 import com.mt.transactions.api.dto.StatusResponse;
+import com.mt.transactions.api.dto.SumResponse;
 import com.mt.transactions.application.TransactionService;
 import com.mt.transactions.domain.SaveResult;
 import org.springframework.http.HttpStatus;
@@ -43,5 +44,11 @@ public class TransactionController {
     @GetMapping("/types/{type}")
     public List<Long> getIdsByType(@PathVariable String type) {
         return service.getIdsByType(type);
+    }
+
+    /** Amount of the transaction plus all its descendants. */
+    @GetMapping("/sum/{transactionId}")
+    public SumResponse getSum(@PathVariable long transactionId) {
+        return new SumResponse(service.getSum(transactionId).doubleValue());
     }
 }

@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -141,5 +142,53 @@ class TransactionControllerIntegrationTest {
 
         mockMvc.perform(get("/transactions/types/cars"))
                 .andExpect(content().json("[10]", true));
+    }
+
+    @Test
+    void acceptanceExample() throws Exception {
+        putTransaction(10, """
+                { "amount": 5000, "type": "cars" }""")
+                .andExpect(status().isCreated())
+                .andExpect(content().json("""
+                        {"status":"ok"}""", true));
+        putTransaction(11, """
+                { "amount": 10000, "type": "shopping", "parent_id": 10 }""")
+                .andExpect(status().isCreated());
+        putTransaction(12, """
+                { "amount": 5000, "type": "shopping", "parent_id": 11 }""")
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/transactions/types/cars"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[10]", true));
+        mockMvc.perform(get("/transactions/sum/10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sum").value(20000.0));
+        mockMvc.perform(get("/transactions/sum/11"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sum").value(15000.0));
+    }
+
+    @Test
+    void sumOfLeafIsItsOwnAmount() throws Exception {
+        putTransaction(10, """
+                { "amount": 5000, "type": "cars" }""").andExpect(status().isCreated());
+
+        mockMvc.perform(get("/transactions/sum/10"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("""
+                        {"sum": 5000.0}""", true));
+    }
+
+    @Test
+    void sumAvoidsFloatingPointErrors() throws Exception {
+        putTransaction(1, """
+                { "amount": 0.1, "type": "t" }""").andExpect(status().isCreated());
+        putTransaction(2, """
+                { "amount": 0.2, "type": "t", "parent_id": 1 }""").andExpect(status().isCreated());
+
+        mockMvc.perform(get("/transactions/sum/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sum").value(0.3));
     }
 }
