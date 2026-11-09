@@ -1,6 +1,6 @@
 # Transactions Service — RFC / Design Doc
  
-> Estado: **Propuesto** · Autor: Mauro Tapia · Última actualización: 2026-11-06
+> Estado: **Implementado** · Autor: Mauro Tapia · Última actualización: 2026-11-09
  
 ## 1. Contexto y objetivo
  
@@ -232,7 +232,7 @@ Alternativa descartada: precalcular las sumas propagando a los ancestros en cada
  
 ## 8. Estrategia de testing
  
-Se desarrolla con **TDD**: cada comportamiento arranca con un test que falla.
+El comportamiento se desarrolla con **TDD**: cada funcionalidad arranca con un test que falla. Los commits de documentación, bootstrap y Docker no agregan comportamiento, y el de concurrencia (#10) agrega tests sobre comportamiento ya implementado; su efectividad se validó con una mutación (quitar el write lock hace fallar la suite).
  
 | Nivel | Qué cubre | Herramientas |
 |---|---|---|
@@ -264,7 +264,7 @@ Los tests de integración envían **JSON crudo idéntico al del contrato**, no D
  
 ## 9. Plan de implementación (commits)
  
-Cada paso es un par *test rojo → implementación*, con [Conventional Commits](https://www.conventionalcommits.org/).
+Los pasos que agregan comportamiento (#3 a #9 y #12) son un par *test rojo → implementación*. Todos usan [Conventional Commits](https://www.conventionalcommits.org/).
  
 | # | Commit | Contenido |
 |---|---|---|
