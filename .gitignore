@@ -24,3 +24,6 @@ logs/
 
 # Spring Boot
 spring-shell.log
+
+# Claude Code
+.claude/
