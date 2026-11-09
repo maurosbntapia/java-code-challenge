@@ -228,7 +228,7 @@ Recorrido **iterativo** (DFS con `ArrayDeque`) desde la transacción pedida a tr
 | `GET /types/{type}` | O(k), k = ids del tipo |
 | `GET /sum/{id}` | O(d), d = cantidad de descendientes |
  
-Alternativa descartada: precalcular las sumas propagando a los ancestros en cada escritura. Eso da `sum` en O(1), pero lleva el `PUT` a O(profundidad) y agrega estado derivado que hay que mantener consistente. No se justifica para este alcance.
+Alternativa descartada: precalcular las sumas propagando a los ancestros en cada escritura. Eso da `sum` en O(1), pero lleva el `PUT` a O(profundidad) y mezcla estado derivado con el almacenamiento principal, que hay que mantener consistente bajo el mismo lock. No se justifica para este alcance; si hiciera falta, ver §12.
  
 ## 8. Estrategia de testing
  
@@ -260,6 +260,7 @@ Los tests de integración envían **JSON crudo idéntico al del contrato**, no D
 | Tipo sin transacciones | `200 []` |
 | Sum de id inexistente | `404` |
 | Cadena de 10.000 niveles | sin `StackOverflowError` |
+| PUTs concurrentes idénticos (mismo id y contenido) | uno `201`, el resto `200`; el id aparece una sola vez |
 | PUTs concurrentes con el mismo id y distinto contenido | uno `201`, el resto `409` |
  
 ## 9. Plan de implementación (commits)
@@ -302,8 +303,8 @@ Los pasos que agregan comportamiento (#3 a #9 y #12) son un par *test rojo → i
 ## 12. Extensiones futuras
  
 - **Reversas y ajustes.** Hoy `amount > 0`. Si el negocio necesitara restas, no se usarían montos negativos ni un endpoint de "resta". Se modelarían como en un ledger de partida doble, con una dirección explícita (`DEBIT` / `CREDIT`) y monto siempre positivo, o como transacciones de reversa vinculadas a la original vía `parent_id`. `sum` pasaría a calcular el neto según la dirección.
-- **Consulta de ancestros** (`GET /transactions/{id}/ancestors`) para auditoría: reconstruir la cadena que originó una transacción.
+- **Consulta de ancestros**, solo si aparece un requerimiento de auditoría hacia atrás (reconstruir la cadena que originó una transacción). El contrato actual es completo sin ella, así que no se agrega especulativamente.
 - **Persistencia durable**: una nueva implementación de `TransactionRepository` (por ejemplo Redis o MongoDB) sin cambios en el service.
 - **Múltiples instancias**: requiere estado externo compartido y mover las invariantes de atomicidad a ese almacenamiento.
-- **Sumas precalculadas** si `sum` se volviera un cuello de botella (ver §7).
+- **Lecturas más rápidas de `sum`**, solo si se mide que es un cuello de botella. Antes que precalcular sumas en el write path (descartado en §7), se evaluaría un cache de lectura o un modelo de lectura separado (CQRS). En ambos casos, cada `PUT` invalida o actualiza la suma de sus ancestros, así que el costo de escritura no desaparece: se mueve a un camino desacoplado de la escritura principal.
 

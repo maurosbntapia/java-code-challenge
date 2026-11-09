@@ -114,12 +114,12 @@ El repositorio en memoria usa un `ReentrantReadWriteLock` que protege los tres �
 | `TransactionTypeTest`, `TransactionTest` | Normalización, validación de monto, igualdad de contenido |
 | `InMemoryTransactionRepositoryTest` | Invariantes, índices, orden, recorrido de `sum` |
 | `InMemoryTransactionRepositoryConcurrencyTest` | Escrituras concurrentes, lecturas durante escrituras, cadena de 10.000 niveles |
-| `TransactionControllerIntegrationTest` | Contrato HTTP con JSON crudo, ejemplo de aceptación |
-| `TransactionErrorHandlingIntegrationTest` | 400 / 404 / 409 / 422 como Problem Details, `PUT`s concurrentes |
+| `TransactionControllerIntegrationTest` | Contrato HTTP con JSON crudo, ejemplo de aceptación, `PUT`s concurrentes idénticos |
+| `TransactionErrorHandlingIntegrationTest` | 400 / 404 / 409 / 422 como Problem Details, `PUT`s concurrentes con distinto contenido |
 | `OpenApiIntegrationTest` | Spec OpenAPI y Swagger UI |
 
 ## Limitaciones
 
 - El estado vive en el heap: se pierde al reiniciar y no se comparte entre réplicas.
 - Sin autenticación.
-- Extensiones posibles (persistencia durable, reversas, ancestros) en [design.md §12](design.md#12-extensiones-futuras).
+- Extensiones posibles (persistencia durable, reversas, lecturas más rápidas de `sum`) en [design.md §12](design.md#12-extensiones-futuras).
